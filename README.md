@@ -24,7 +24,7 @@ pip install -r requirement.txt
 ```
 python arxiv_checker.py --first_backcheck_day 3 --keywords llm,search,reasoning,planning,optimization
 ```
-The bot will send you arXiv papers related to your interest to the chat window.  
+The bot will send you arXiv papers related to your interest every day, to the chat window.  
 + `keywords` specifies the keywords of the paper the bot uses to search, separated by comma. No space needed. 
 + `first_backcheck_day` is to specify how many days to look back to get arXiv papers, when the bot runs at the first time. 
 
