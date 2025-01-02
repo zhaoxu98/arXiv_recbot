@@ -5,7 +5,6 @@ from sklearn.linear_model import LogisticRegression
 import joblib
 import random
 import argparse
-from functools import partial
 
 import torch
 
@@ -132,11 +131,12 @@ def main():
 
     application.add_handler(CallbackQueryHandler(feedback_handler))
 
-    fetch_func = partial(fetch_and_send_papers, args.keywords)
+    run_once_fetch_func = lambda context: fetch_and_send_papers(args.keywords, args.first_backcheck_day, context)
+    run_daily_fetch_func = lambda context: fetch_and_send_papers(args.keywords, 2, context)
 
     if args.first_backcheck_day is not None:
-        application.job_queue.run_once(partial(fetch_func, args.first_backcheck_day), when=timedelta(seconds=1))
-    application.job_queue.run_daily(partial(fetch_func, 2), time(hour=15)) 
+        application.job_queue.run_once(run_once_fetch_func, when=timedelta(seconds=1))
+    application.job_queue.run_daily(run_daily_fetch_func, time(hour=15)) 
 
     # Run the bot
     application.run_polling()

@@ -3,7 +3,7 @@ Here is a simple Telegram bot to recommend arXiv papers daily, obtain your prefe
 
 # Install
 ## Get Bot token
-Create a telegram bot following the instruction [here](https://core.telegram.org/bots/tutorial). Then you get a bot token and store it in `TELEGRAM_BOT_TOKEN` as an environment variable.
+Create a telegram bot following the instruction [here](https://core.telegram.org/bots/tutorial). Then you get a bot token and store it in `TELEGRAM_BOT_TOKEN_NOTIF_BOT` as an environment variable.
 
 ## Get Chat ID
 Then you can get your chat id. First randomly chat with the bot you just created in telegram, then run
