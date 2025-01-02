@@ -28,7 +28,7 @@ The bot will send you arXiv papers related to your interest to the chat window.
 + `keywords` specifies the keywords of the paper the bot uses to search, separated by comma. No space needed. 
 + `first_backcheck_day` is to specify how many days to look back to get arXiv papers, when the bot runs at the first time. 
 
-For each paper the bot sends, in the chat window there will be possible ratings (:thumbsdown: = 1, :thumbsup: = 5 and :heart: = 6) for the user to rate. User can press the rating and the bot will receive it (as one reply message from the bot). 
+For each paper the bot sends, in the chat window there will be possible ratings ( :thumbsdown: = 1, :thumbsup: = 5 and :heart: = 6 ) for the user to rate. User can press the rating and the bot will receive it (as one reply message from the bot). 
 
 User can also suggest papers by send its arXiv link in the chat window. Such papers will automatically be ranked as :thumbsup: = 5. 
 
