@@ -1,5 +1,5 @@
 arxiv==2.0.0
 python-telegram-bot==20.2
-sklearn
+scikit-learn
 pandas
-pytorch
+torch
