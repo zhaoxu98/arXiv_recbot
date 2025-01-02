@@ -39,5 +39,6 @@ python preference_model.py
 ```
 It will save the trained model to `pytorch_preference_model.pt` and `tfidf_vectorizer.joblib` (as a TF-IDF vectorizer). Then you restart `arxiv_checker.py` to load the updated models and continue the recommendation. 
 
+# LICENSE
 
-
+MIT License
