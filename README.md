@@ -24,7 +24,7 @@ pip install -r requirement.txt
 ```
 python arxiv_checker.py --first_backcheck_day 3 --keywords llm,search,reasoning,planning,optimization
 ```
-The bot will send you arXiv papers related to your interest to the chat window.  
+The bot will send you arXiv papers related to your interest every day, to the chat window.  
 + `keywords` specifies the keywords of the paper the bot uses to search, separated by comma. No space needed. 
 + `first_backcheck_day` is to specify how many days to look back to get arXiv papers, when the bot runs at the first time. 
 
@@ -39,5 +39,6 @@ python preference_model.py
 ```
 It will save the trained model to `pytorch_preference_model.pt` and `tfidf_vectorizer.joblib` (as a TF-IDF vectorizer). Then you restart `arxiv_checker.py` to load the updated models and continue the recommendation. 
 
+# LICENSE
 
-
+MIT License

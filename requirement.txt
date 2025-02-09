@@ -1,5 +1,6 @@
 arxiv==2.0.0
-python-telegram-bot==20.2
-sklearn
+python-telegram-bot[job-queue]==20.2
+scikit-learn
 pandas
-pytorch
+torch
+telethon
