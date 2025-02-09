@@ -169,7 +169,7 @@ session_name = "arxiv_retriever"
 target_chat = int(os.environ["TELEGRAM_BOT_CHAT_ID"])
 
 # Number of messages to retrieve
-limit = 10000  
+limit = 100000  
 
 async def main():
     # Initialize the client
