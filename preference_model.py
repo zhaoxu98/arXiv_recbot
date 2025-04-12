@@ -17,6 +17,11 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import TensorDataset, DataLoader
 
+# Logging with timestamps
+import logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
 import joblib
 from arxiv_util import *
 
@@ -176,7 +181,7 @@ async def main():
     client = TelegramClient(session_name, api_id, api_hash)
 
     await client.start()
-    print("Client Created")
+    logger.info("Client Created")
 
     # If you have 2FA enabled, you'll need to enter your password
     if not await client.is_user_authorized():
@@ -193,7 +198,7 @@ async def main():
     try:
         entity = await client.get_entity(target_chat)
     except ValueError:
-        print(f"Could not find the chat: {target_chat}")
+        logger.error(f"Could not find the chat: {target_chat}")
         return
 
     # Use regular expression to extract the label
@@ -212,6 +217,8 @@ async def main():
     cursor.execute('CREATE TABLE IF NOT EXISTS comments (id INTEGER PRIMARY KEY, message_id INTEGER, paper_message_id INTEGER, comment TEXT)')
     cursor.execute('CREATE TABLE IF NOT EXISTS preferences (id INTEGER PRIMARY KEY, message_id INTEGER, paper_message_id INTEGER, preference INTEGER)')
 
+    logger.info("Loading the database papers and preferences ids")
+
     # Get all the processed paper ids
     cursor.execute('SELECT paper_message_id FROM infos')
     processed_paper_ids = set([row[0] for row in cursor.fetchall()])
@@ -221,6 +228,8 @@ async def main():
     processed_message_ids = set([row[0] for row in cursor.fetchall()])
     cursor.execute('SELECT message_id FROM preferences')
     processed_message_ids.update([row[0] for row in cursor.fetchall()])
+
+    logger.info("Iterating over the chat history to save most recent messages")
 
     # Iterate over the chat history from the most recent message of the chat
     async for message in client.iter_messages(entity, limit=limit, reverse=False):
@@ -261,13 +270,16 @@ async def main():
     # Then insert everything into the database
     conn.commit()
 
+    logger.info("Generating the dataset")
     # Then we join the infos and preferences
     cursor.execute('SELECT infos.text, preferences.preference FROM infos JOIN preferences ON infos.paper_message_id = preferences.paper_message_id')
     data = cursor.fetchall()
 
     # Train the model
+    logger.info("Training the model")
     train_model(data)
 
+    logger.info("Disconnecting from the client")
     await client.disconnect()
 
 if __name__ == '__main__':
