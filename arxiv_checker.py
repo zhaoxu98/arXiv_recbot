@@ -141,7 +141,7 @@ async def retrieve_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     for tag in tags:
         # Retrieve the paper from the database that contains the tags
-        cursor.execute('SELECT paper_message_id FROM comments WHERE text LIKE ?', ('%' + tag + '%',))
+        cursor.execute('SELECT paper_message_id FROM comments WHERE comment LIKE ?', ('%' + tag + '%',))
         paper_message_ids = cursor.fetchall()
 
         # Get all papers that contain the tags and return
@@ -149,7 +149,7 @@ async def retrieve_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         for paper_message_id in paper_message_ids:
             # Retrieve the paper from the database
-            cursor.execute('SELECT text FROM infos WHERE paper_message_id = ?', (paper_message_id,))
+            cursor.execute('SELECT text FROM infos WHERE paper_message_id = ?', paper_message_id)
             paper = cursor.fetchone()
             # Convert the paper to a string
             papers.append(str(paper))
