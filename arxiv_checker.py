@@ -58,7 +58,8 @@ async def fetch_and_send_papers(keywords, backdays, context: ContextTypes.DEFAUL
 
     for result in results:
         submitted_date = result.updated
-        submitted_date = submitted_date.replace(tzinfo=None)
+        # Make the submitted date timezone-aware by assuming UTC
+        submitted_date = submitted_date.replace(tzinfo=UTC)
         if submitted_date >= yesterday:
             message = get_arxiv_message(result)
 
