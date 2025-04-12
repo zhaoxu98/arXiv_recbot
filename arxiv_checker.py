@@ -19,21 +19,18 @@ TELEGRAM_CHAT_ID = int(os.environ["TELEGRAM_BOT_CHAT_ID"]) # Replace with your c
 import logging
 from datetime import datetime, timedelta, time
 from arxiv_util import *
-from preference_model import PreferenceModel
+from collect_data import PreferenceModel
 from common import *
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, ContextTypes, CallbackQueryHandler, CommandHandler
 
-model_name = 'pytorch_preference_model.pt'
-vectorizer_name = 'tfidf_vectorizer.joblib'
-
-if os.path.exists(model_name):
-    vectorizer = joblib.load(vectorizer_name)
+if os.path.exists(global_model_name):
+    vectorizer = joblib.load(global_vectorizer_name)
     loaded_model = PreferenceModel(vectorizer.get_feature_names_out().shape[0], 6)
-    loaded_model.load_state_dict(torch.load(model_name))
+    loaded_model.load_state_dict(torch.load(global_model_name))
     loaded_model.eval()
-    print(f"Loaded {model_name} and {vectorizer_name}")
+    print(f"Loaded {global_model_name} and {global_vectorizer_name}")
 else:
     loaded_model = None
 
