@@ -156,17 +156,20 @@ def train_model(data):
     torch.save(model.state_dict(), global_model_name)
     joblib.dump(vectorizer, global_vectorizer_name)
 
+def main():
+    conn = sqlite3.connect(global_dataset_name)
+    cursor = conn.cursor()
 
-conn = sqlite3.connect(global_dataset_name)
-cursor = conn.cursor()
+    logger.info("Generating the dataset")
+    # Then we join the infos and preferences
+    cursor.execute('SELECT infos.text, preferences.preference FROM infos JOIN preferences ON infos.paper_message_id = preferences.paper_message_id')
+    data = cursor.fetchall()
 
-logger.info("Generating the dataset")
-# Then we join the infos and preferences
-cursor.execute('SELECT infos.text, preferences.preference FROM infos JOIN preferences ON infos.paper_message_id = preferences.paper_message_id')
-data = cursor.fetchall()
+    conn.close()
 
-conn.close()
+    # Train the model
+    logger.info("Training the model")
+    train_model(data)
 
-# Train the model
-logger.info("Training the model")
-train_model(data)
+if __name__ == "__main__":
+    main()
