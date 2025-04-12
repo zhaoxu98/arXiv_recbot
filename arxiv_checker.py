@@ -156,9 +156,9 @@ async def retrieve_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         # Return the papers
         if update.callback_query:
-            await query.message.reply_text(f"For tag {tag}, the papers are the following: \n\n{'\n'.join(papers)}", parse_mode="Markdown")
+            await query.message.reply_text(f"For tag {tag}, the papers are the following: \n\n{'\n\n'.join(papers)}", parse_mode="Markdown")
         else:
-            await update.message.reply_text(f"For tag {tag}, the papers are the following: \n\n{'\n'.join(papers)}", parse_mode="Markdown")
+            await update.message.reply_text(f"For tag {tag}, the papers are the following: \n\n{'\n\n'.join(papers)}", parse_mode="Markdown")
 
 def main():
     parser = argparse.ArgumentParser()
