@@ -152,13 +152,13 @@ async def retrieve_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             cursor.execute('SELECT text FROM infos WHERE paper_message_id = ?', paper_message_id)
             for paper in cursor.fetchall():
                 # Convert the paper to a string
-                papers.append(str(paper))
+                papers.append(str(paper[0]))
 
         # Return the papers
         if update.callback_query:
-            await query.message.reply_text(f"For tag {tag}, the papers are the following: \n\n{'\n'.join(papers)}")
+            await query.message.reply_text(f"For tag {tag}, the papers are the following: \n\n{'\n'.join(papers)}", parse_mode="Markdown")
         else:
-            await update.message.reply_text(f"For tag {tag}, the papers are the following: \n\n{'\n'.join(papers)}")
+            await update.message.reply_text(f"For tag {tag}, the papers are the following: \n\n{'\n'.join(papers)}", parse_mode="Markdown")
 
 def main():
     parser = argparse.ArgumentParser()

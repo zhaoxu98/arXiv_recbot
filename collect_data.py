@@ -94,6 +94,8 @@ async def main():
             # get the content of the parent message
             paper_msg = await client.get_messages(target_chat, ids=paper_msg_id)
             if paper_msg.sender.is_self:
+                # If the messsage is about the bot replying to the user request, skip
+                # Only bot/user replies to bot are processed
                 continue
             
             if paper_msg_id not in processed_paper_ids:
