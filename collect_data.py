@@ -130,15 +130,6 @@ async def main():
     # Then insert everything into the database
     conn.commit()
 
-    logger.info("Generating the dataset")
-    # Then we join the infos and preferences
-    cursor.execute('SELECT infos.text, preferences.preference FROM infos JOIN preferences ON infos.paper_message_id = preferences.paper_message_id')
-    data = cursor.fetchall()
-
-    # Train the model
-    logger.info("Training the model")
-    train_model(data)
-
     logger.info("Disconnecting from the client")
     await client.disconnect()
 
