@@ -17,6 +17,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import TensorDataset, DataLoader
 
+from common import *
 # Logging with timestamps
 import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -211,7 +212,7 @@ async def main():
     })
 
     # Load the message from the chat history and save it to a sqlite database
-    conn = sqlite3.connect('arxiv_preference.db')
+    conn = sqlite3.connect(global_dataset_name)
     cursor = conn.cursor()
     cursor.execute('CREATE TABLE IF NOT EXISTS infos (id INTEGER PRIMARY KEY, paper_message_id INTEGER, text TEXT)')
     cursor.execute('CREATE TABLE IF NOT EXISTS comments (id INTEGER PRIMARY KEY, message_id INTEGER, paper_message_id INTEGER, comment TEXT)')
@@ -243,6 +244,9 @@ async def main():
             paper_msg_id = message.reply_to_msg_id
             # get the content of the parent message
             paper_msg = await client.get_messages(target_chat, ids=paper_msg_id)
+            if paper_msg.sender.is_self:
+                continue
+            
             if paper_msg_id not in processed_paper_ids:
                 if paper_msg.text.startswith("//"):
                     paper_msg.text = "\n".join(paper_msg.text.split("\n")[1:])
@@ -263,9 +267,16 @@ async def main():
         
         elif message.sender.is_self and message.text is not None and message.text.startswith("https://arxiv.org"):
             # Put the paper in with default preference 
-            results = get_arxiv_results(message.text.split("/")[-1], 1)
+            # If there is any comments, we put the comments in the comments table
+            # If there is any preferences, we put the preferences in the preferences table
+            arxiv_link, comments = message.text.split(" ", 1)
+            results = get_arxiv_results(arxiv_link, 1)
             cursor.execute('INSERT INTO infos (paper_message_id, text) VALUES (?, ?)', (message.id, get_arxiv_message(results[0]).replace("**", "")))
             cursor.execute('INSERT INTO preferences (message_id, paper_message_id, preference) VALUES (?, ?, ?)', (message.id, message.id, 4))
+
+            comments = comments.strip()
+            if comments != "":
+                cursor.execute('INSERT INTO comments (message_id, paper_message_id, comment) VALUES (?, ?, ?)', (message.id, message.id, comments))
 
     # Then insert everything into the database
     conn.commit()

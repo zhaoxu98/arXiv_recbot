@@ -7,6 +7,7 @@ import random
 import argparse
 
 import torch
+import sqlite3
 
 # Define your keywords
 MAX_RESULTS = 100
@@ -19,9 +20,10 @@ import logging
 from datetime import datetime, timedelta, time
 from arxiv_util import *
 from preference_model import PreferenceModel
+from common import *
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ApplicationBuilder, ContextTypes, CallbackQueryHandler
+from telegram.ext import ApplicationBuilder, ContextTypes, CallbackQueryHandler, CommandHandler
 
 model_name = 'pytorch_preference_model.pt'
 vectorizer_name = 'tfidf_vectorizer.joblib'
@@ -42,6 +44,10 @@ logging.basicConfig(
 )
 
 application = None  # Will hold the Telegram application instance
+
+# Open the database
+conn = sqlite3.connect(global_dataset_name)
+cursor = conn.cursor()
 
 async def fetch_and_send_papers(keywords, backdays, context: ContextTypes.DEFAULT_TYPE):
     results = get_arxiv_results(keywords.replace(",", " OR "), MAX_RESULTS)
@@ -120,6 +126,33 @@ async def feedback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.edit_message_reply_markup(reply_markup=None)
     await query.message.reply_text(f"Thank you for your feedback: {feedback_type}")
 
+async def retrieve_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    # Get data and retrieve the paper from the database
+    data = query.data
+    # Get all tags from the data, e.g. /get tag1 tag2 tag3
+    tags = data.split(' ')
+
+    for tag in tags:
+        # Retrieve the paper from the database that contains the tags
+        cursor.execute('SELECT paper_message_id FROM comments WHERE text LIKE ?', ('%' + tag + '%',))
+        paper_message_ids = cursor.fetchall()
+
+        # Get all papers that contain the tags and return
+        papers = []
+
+        for paper_message_id in paper_message_ids:
+            # Retrieve the paper from the database
+            cursor.execute('SELECT text FROM infos WHERE paper_message_id = ?', (paper_message_id,))
+            paper = cursor.fetchone()
+            # Convert the paper to a string
+            papers.append(str(paper))
+
+        # Return the papers
+        await query.message.reply_text(f"For tag {tag}, the papers are the following: \n\n{'\n'.join(papers)}")
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--first_backcheck_day', type=int, default=None)
@@ -130,6 +163,8 @@ def main():
     application = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
 
     application.add_handler(CallbackQueryHandler(feedback_handler))
+    # Add command handler for /get
+    application.add_handler(CommandHandler("get", retrieve_handler))
 
     run_once_fetch_func = lambda context: fetch_and_send_papers(args.keywords, args.first_backcheck_day, context)
     run_daily_fetch_func = lambda context: fetch_and_send_papers(args.keywords, 2, context)
