@@ -208,17 +208,36 @@ async def main():
     # Load the message from the chat history and save it to a sqlite database
     conn = sqlite3.connect('arxiv_preference.db')
     cursor = conn.cursor()
-    cursor.execute('CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY, message_id INTEGER, text TEXT, preference INTEGER)')
+    cursor.execute('CREATE TABLE IF NOT EXISTS infos (id INTEGER PRIMARY KEY, paper_message_id INTEGER, text TEXT)')
+    cursor.execute('CREATE TABLE IF NOT EXISTS comments (id INTEGER PRIMARY KEY, message_id INTEGER, paper_message_id INTEGER, comment TEXT)')
+    cursor.execute('CREATE TABLE IF NOT EXISTS preferences (id INTEGER PRIMARY KEY, message_id INTEGER, paper_message_id INTEGER, preference INTEGER)')
+
+    # Get all the processed paper ids
+    cursor.execute('SELECT paper_message_id FROM infos')
+    processed_paper_ids = set([row[0] for row in cursor.fetchall()])
+
+    # Get all the processed message ids from the comments and preferences
+    cursor.execute('SELECT message_id FROM comments')
+    processed_message_ids = set([row[0] for row in cursor.fetchall()])
+    cursor.execute('SELECT message_id FROM preferences')
+    processed_message_ids.update([row[0] for row in cursor.fetchall()])
 
     # Iterate over the chat history from the most recent message of the chat
     async for message in client.iter_messages(entity, limit=limit, reverse=False):
-        # Check whether the message is a reply
-        entry = None
+        # Check whether the message has been processed, if so, break the loop since we iterate over the messages from most recent one
+        if message.id in processed_message_ids:
+            break
+
+        # collect the paper information
         if message.reply_to_msg_id:
             # Get parent message
-            parent_msg_id = message.reply_to_msg_id
+            paper_msg_id = message.reply_to_msg_id
             # get the content of the parent message
-            parent_msg = await client.get_messages(target_chat, ids=parent_msg_id)
+            paper_msg = await client.get_messages(target_chat, ids=paper_msg_id)
+            if paper_msg_id not in processed_paper_ids:
+                if paper_msg.text.startswith("//"):
+                    paper_msg.text = "\n".join(paper_msg.text.split("\n")[1:])
+                cursor.execute('INSERT INTO infos (paper_message_id, text) VALUES (?, ?)', (paper_msg_id, paper_msg.text))
 
             # Extract label 
             # Example text: Thank you for your feedback: not
@@ -228,35 +247,22 @@ async def main():
                 label = label2class.get(m.group(1), None)
                 if label is not None:
                     # For parent_msg.txt, if the first line starts with "//", remove it
-                    if parent_msg.text.startswith("//"):
-                        parent_msg.text = "\n".join(parent_msg.text.split("\n")[1:])
-                    entry = {
-                        "message_id": message.id,
-                        "text": parent_msg.text,
-                        "preference": label
-                    }
+                    cursor.execute('INSERT INTO preferences (message_id, paper_message_id, preference) VALUES (?, ?, ?)', (message.id, paper_msg_id, label))
+            else:
+                # Comments
+                cursor.execute('INSERT INTO comments (message_id, paper_message_id, comment) VALUES (?, ?, ?)', (message.id, paper_msg_id, message.text))
+        
         elif message.sender.is_self and message.text is not None and message.text.startswith("https://arxiv.org"):
             # Put the paper in with default preference 
             results = get_arxiv_results(message.text.split("/")[-1], 1)
-            entry = {
-                "message_id": message.id,
-                "text": get_arxiv_message(results[0]).replace("**", ""),
-                "preference": 4
-            }
+            cursor.execute('INSERT INTO infos (paper_message_id, text) VALUES (?, ?)', (message.id, get_arxiv_message(results[0]).replace("**", "")))
+            cursor.execute('INSERT INTO preferences (message_id, paper_message_id, preference) VALUES (?, ?, ?)', (message.id, message.id, 4))
 
-        if entry is not None:
-            # If there is no such message, insert it
-            # otherwise we break the loop since all previous messages have been sent to the database
-            # Check whether the message is already in the database
-            cursor.execute('SELECT COUNT(*) FROM messages WHERE message_id = ?', (entry["message_id"],))
-            if cursor.fetchone()[0] == 0:
-                cursor.execute('INSERT INTO messages (message_id, text, preference) VALUES (?, ?, ?)', (entry["message_id"], entry["text"], entry["preference"]))
-                conn.commit()
-            else:
-                break
+    # Then insert everything into the database
+    conn.commit()
 
-    # Get all the messages from the database
-    cursor.execute('SELECT text, preference FROM messages')
+    # Then we join the infos and preferences
+    cursor.execute('SELECT infos.text, preferences.preference FROM infos JOIN preferences ON infos.paper_message_id = preferences.paper_message_id')
     data = cursor.fetchall()
 
     # Train the model
