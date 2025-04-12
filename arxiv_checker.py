@@ -17,7 +17,7 @@ TELEGRAM_BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN_NOTIF_BOT"]  # Set your Tele
 TELEGRAM_CHAT_ID = int(os.environ["TELEGRAM_BOT_CHAT_ID"]) # Replace with your chat ID
 
 import logging
-from datetime import datetime, timedelta, time
+from datetime import datetime, timedelta, time, UTC
 from arxiv_util import *
 from preference_model import PreferenceModel
 from common import *
@@ -49,7 +49,7 @@ cursor = conn.cursor()
 async def fetch_and_send_papers(keywords, backdays, context: ContextTypes.DEFAULT_TYPE):
     results = get_arxiv_results(keywords.replace(",", " OR "), MAX_RESULTS)
 
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
     yesterday = now - timedelta(days=backdays)
 
     num_sent = 0
@@ -124,13 +124,19 @@ async def feedback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.message.reply_text(f"Thank you for your feedback: {feedback_type}")
 
 async def retrieve_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-
-    # Get data and retrieve the paper from the database
-    data = query.data
-    # Get all tags from the data, e.g. /get tag1 tag2 tag3
-    tags = data.split(' ')
+    if not update.callback_query:
+        # Handle command case
+        if not context.args:
+            await update.message.reply_text("Please provide tags to search for. Usage: /get tag1 tag2 tag3")
+            return
+            
+        tags = context.args
+    else:
+        # Handle callback query case
+        query = update.callback_query
+        await query.answer()
+        data = query.data
+        tags = data.split(' ')
 
     for tag in tags:
         # Retrieve the paper from the database that contains the tags
@@ -148,7 +154,10 @@ async def retrieve_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             papers.append(str(paper))
 
         # Return the papers
-        await query.message.reply_text(f"For tag {tag}, the papers are the following: \n\n{'\n'.join(papers)}")
+        if update.callback_query:
+            await query.message.reply_text(f"For tag {tag}, the papers are the following: \n\n{'\n'.join(papers)}")
+        else:
+            await update.message.reply_text(f"For tag {tag}, the papers are the following: \n\n{'\n'.join(papers)}")
 
 def main():
     parser = argparse.ArgumentParser()
@@ -160,8 +169,8 @@ def main():
     application = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
 
     application.add_handler(CallbackQueryHandler(feedback_handler))
-    # Add command handler for /get
     application.add_handler(CommandHandler("get", retrieve_handler))
+    application.add_handler(CallbackQueryHandler(retrieve_handler, pattern="^get"))
 
     run_once_fetch_func = lambda context: fetch_and_send_papers(args.keywords, args.first_backcheck_day, context)
     run_daily_fetch_func = lambda context: fetch_and_send_papers(args.keywords, 2, context)
