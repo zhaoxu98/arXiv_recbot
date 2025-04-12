@@ -19,7 +19,7 @@ TELEGRAM_CHAT_ID = int(os.environ["TELEGRAM_BOT_CHAT_ID"]) # Replace with your c
 import logging
 from datetime import datetime, timedelta, time
 from arxiv_util import *
-from collect_data import PreferenceModel
+from preference_model import PreferenceModel
 from common import *
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
