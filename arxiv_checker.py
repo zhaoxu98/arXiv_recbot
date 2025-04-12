@@ -150,9 +150,9 @@ async def retrieve_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         for paper_message_id in paper_message_ids:
             # Retrieve the paper from the database
             cursor.execute('SELECT text FROM infos WHERE paper_message_id = ?', paper_message_id)
-            paper = cursor.fetchone()
-            # Convert the paper to a string
-            papers.append(str(paper))
+            for paper in cursor.fetchall():
+                # Convert the paper to a string
+                papers.append(str(paper))
 
         # Return the papers
         if update.callback_query:
